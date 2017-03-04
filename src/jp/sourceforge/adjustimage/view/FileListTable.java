@@ -16,7 +16,7 @@ import jp.sourceforge.adjustimage.model.Filesize;
 public class FileListTable extends JTable {
 	private static final long serialVersionUID = 1L;
 
-	private String[] columnNames = {"ƒtƒ@ƒCƒ‹–¼", "ƒTƒCƒY", "ˆ³kŒã", "i’»"};
+	private String[] columnNames = {"ãƒ•ã‚¡ã‚¤ãƒ«å", "ã‚µã‚¤ã‚º", "åœ§ç¸®å¾Œ", "é€²æ—"};
 	int currentIndex = 0;
 	FilesizeCellRenderer filesizeRenderer = new FilesizeCellRenderer();
 	DefaultTableCellRenderer progressRenderer = new ProgressCellRenderer();

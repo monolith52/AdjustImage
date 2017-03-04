@@ -44,7 +44,7 @@ public class Application extends JFrame {
 		JScrollPane scrollPane = new JScrollPane(fileListTable);
 		getContentPane().add(scrollPane, BorderLayout.CENTER);
 		
-		saveButton = new JButton("ï€ë∂");
+		saveButton = new JButton("‰øùÂ≠ò");
 		saveButton.addActionListener(new SaveAction());
 		getContentPane().add(saveButton,  BorderLayout.SOUTH);
 	}
