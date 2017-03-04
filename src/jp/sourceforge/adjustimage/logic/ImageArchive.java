@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
@@ -20,9 +21,9 @@ import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 
 import org.apache.commons.io.IOUtils;
 
-import jp.sourceforge.adjustimage.conf.Configure;
 import jp.sourceforge.adjustimage.model.Filesize;
 import jp.sourceforge.adjustimage.view.FileListTable;
+import monolith52.adjustimage.util.ResourceUtil;
 
 public class ImageArchive {
 	
@@ -42,7 +43,7 @@ public class ImageArchive {
 		ZipFile zip = null;
 		int index = 0;
 		try {
-			zip = new ZipFile(targetFile, Configure.ZIPFILE_CHARSET);
+			zip = new ZipFile(targetFile, Charset.forName(ResourceUtil.getString("zipfileCharset")));
 			Enumeration<? extends ZipEntry> entries = zip.entries();
 			while (entries.hasMoreElements()) {
 				index += 1;
@@ -79,7 +80,7 @@ public class ImageArchive {
 				new FileOutputStream(outputFile);
 		boolean failed = false;
 		
-		ZipFile zip = new ZipFile(targetFile, Configure.ZIPFILE_CHARSET);
+		ZipFile zip = new ZipFile(targetFile, Charset.forName(ResourceUtil.getString("zipfileCharset")));
 		ZipOutputStream zipOut = new ZipOutputStream(outputStream);
 		
 		try {
@@ -93,7 +94,7 @@ public class ImageArchive {
 	
 				JPEGImageWriteParam jiparam = new JPEGImageWriteParam(Locale.getDefault());
 				jiparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-				jiparam.setCompressionQuality(Configure.ADJUST_COMPRESSRATE);
+				jiparam.setCompressionQuality(ResourceUtil.getFloat("adjust.compressRate"));
 				
 				if (isImage(entry.getName())) {
 					
@@ -134,8 +135,8 @@ public class ImageArchive {
 				fileListTable.complete(outputFilesize);
 				System.out.println("saved filesize [" + outputFilesize + "]");
 				
-				// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª¬‚³‚­‚È‚ç‚È‚©‚Á‚½ê‡‚Ío—Íƒtƒ@ƒCƒ‹‚ğíœ‚·‚é
-				if (Configure.REMOVE_INEFFECTIVE_FILE) {
+				// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Íoï¿½Íƒtï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½íœï¿½ï¿½ï¿½ï¿½
+				if (ResourceUtil.getBoolean("remove.ineffectiveFile")) {
 					if (inputFilesize <= outputFilesize) {
 						outputFile.delete();
 						outputFile = null;
@@ -143,10 +144,10 @@ public class ImageArchive {
 					}
 				}
 				
-				// ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ª¬‚³‚­‚È‚Á‚½‚çƒIƒŠƒWƒiƒ‹ƒtƒ@ƒCƒ‹‚ğƒŠƒl[ƒ€‚·‚é
-				if (Configure.RENAME_EFFECTIVE_ORIGINAL_FILE) {
+				// ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Tï¿½Cï¿½Yï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½Wï¿½iï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½lï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				if (ResourceUtil.getBoolean("rename.effectiveOriginalFile")) {
 					if (inputFilesize > outputFilesize) {
-						String renameFilename = targetFile.getParent() + File.separator + Configure.RENAME_PREFIX + targetFile.getName();
+						String renameFilename = targetFile.getParent() + File.separator + ResourceUtil.getString("rename.prefix") + targetFile.getName();
 						targetFile.renameTo(new File(renameFilename));
 						System.out.println("original file renamed");
 					}
@@ -165,8 +166,8 @@ public class ImageArchive {
 			if (zipOut != null) zipOut.close();
 		}
 		
-		// ¸”s‚µ‚½ê‡‚Ííœ‚·‚é
-		if (Configure.REMOVE_INCOMPLETE_FILE) {
+		// ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Ííœï¿½ï¿½ï¿½ï¿½
+		if (ResourceUtil.getBoolean("remove.incompleteFile")) {
 			if (failed && outputFile != null) {
 				outputFile.delete();
 				outputFile = null;
@@ -177,7 +178,7 @@ public class ImageArchive {
 	public File getSaveFile() {
 		String filename = targetFile.getAbsolutePath();
 		String[] parts = filename.split(File.separator.replace("\\", "\\\\"));
-		parts[parts.length-1] = Configure.SAVEFILE_PREFIX + parts[parts.length-1];
+		parts[parts.length-1] = ResourceUtil.getString("savefile.prefix") + parts[parts.length-1];
 		filename = String.join(File.separator, parts);
 		
 		return new File(filename);
