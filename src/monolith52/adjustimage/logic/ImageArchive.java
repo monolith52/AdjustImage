@@ -1,4 +1,4 @@
-package jp.sourceforge.adjustimage.logic;
+package monolith52.adjustimage.logic;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -21,29 +21,24 @@ import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 
 import org.apache.commons.io.IOUtils;
 
-import jp.sourceforge.adjustimage.model.Filesize;
-import jp.sourceforge.adjustimage.view.FileListTable;
 import monolith52.adjustimage.util.ResourceUtil;
 
 public class ImageArchive {
 	
-	File targetFile;
-	FileListTable fileListTable;
+	File inputFile;
+	ArchiveListener listener;
 	boolean isFileError = false;
 	
-	public ImageArchive(File targetFile) {
-		this.targetFile = targetFile;
-	}
-
-	public void setFileListTable(FileListTable obj) {
-		this.fileListTable = obj;
+	public ImageArchive(File inputFile, ArchiveListener listener) {
+		this.inputFile = inputFile;
+		this.listener = listener;
 	}
 
 	public int scan() throws ZipException, IOException {
 		ZipFile zip = null;
 		int index = 0;
 		try {
-			zip = new ZipFile(targetFile, Charset.forName(ResourceUtil.getString("zipfileCharset")));
+			zip = new ZipFile(inputFile, Charset.forName(ResourceUtil.getString("zipfile.charset")));
 			Enumeration<? extends ZipEntry> entries = zip.entries();
 			while (entries.hasMoreElements()) {
 				index += 1;
@@ -59,15 +54,23 @@ public class ImageArchive {
 		return index;
 	}
 	
-	public void analyze() throws IOException {
-		archive(null);
+	public void analyze() {
+		try {
+			archive(null);
+		} catch (IOException e) {
+			if (listener != null) listener.failed(inputFile, e.getMessage());
+		}
 	}
 	
-	public void save() throws IOException {
-		archive(getSaveFile());
+	public void process() {
+		try {
+			archive(getSaveFile());
+		} catch (IOException e) {
+			if (listener != null) listener.failed(inputFile, e.getMessage());
+		}
 	}
 	
-	public void archive(File outputFile) throws IOException {
+	protected void archive(File outputFile) throws IOException {
 		if (isFileError) {
 			System.out.println("archive skipped");
 			return;
@@ -75,15 +78,15 @@ public class ImageArchive {
 		
 		System.out.println("archive action");
 		
-		OutputStream outputStream = (outputFile == null) ?
-				new IdleOutputStream() :
-				new FileOutputStream(outputFile);
 		boolean failed = false;
 		
-		ZipFile zip = new ZipFile(targetFile, Charset.forName(ResourceUtil.getString("zipfileCharset")));
-		ZipOutputStream zipOut = new ZipOutputStream(outputStream);
-		
-		try {
+		try (
+				ZipFile zip = new ZipFile(inputFile, Charset.forName(ResourceUtil.getString("zipfile.charset")));
+				OutputStream outputStream = (outputFile == null) ?
+						new IdleOutputStream() :
+						new FileOutputStream(outputFile);
+				ZipOutputStream zipOut = new ZipOutputStream(outputStream);
+		) {
 			Enumeration<? extends ZipEntry> entries = zip.entries();
 			Progress progress = new Progress();
 			progress.length = scan();
@@ -94,7 +97,7 @@ public class ImageArchive {
 	
 				JPEGImageWriteParam jiparam = new JPEGImageWriteParam(Locale.getDefault());
 				jiparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-				jiparam.setCompressionQuality(ResourceUtil.getFloat("adjust.compressRate"));
+				jiparam.setCompressionQuality(ResourceUtil.getFloat("adjust.compressrate"));
 				
 				if (isImage(entry.getName())) {
 					
@@ -112,30 +115,24 @@ public class ImageArchive {
 					writer.write(null, new IIOImage(image, null, null), jiparam);
 					zipOut.closeEntry();
 					
-					fileListTable.update(progress);
-					System.out.println("archive: [" + new Filesize(saveEntry.getSize()) + "] " + entryName);
+					if (listener != null) listener.update(inputFile, progress);
+					System.out.println("archive: [" + (saveEntry.getSize() / 1024) + "KB] " + entryName);
 				} else {
 					ZipEntry saveEntry = new ZipEntry(entry.getName());
 					zipOut.putNextEntry(saveEntry);
 					IOUtils.copy(zip.getInputStream(entry), zipOut);
 					
-					fileListTable.update(progress);
+					if (listener != null) listener.update(inputFile, progress);
 					System.out.println("archive: " + entry.getName());
 				}
 			}
 			
 			if (outputFile != null) {
-				zip.close();
-				zip = null;
-				zipOut.close();
-				zipOut = null;
-				
-				long inputFilesize = targetFile.length();
+				long inputFilesize = inputFile.length();
 				long outputFilesize = outputFile.length();
-				fileListTable.complete(outputFilesize);
+				if (listener != null) listener.success(inputFile, outputFile);
 				System.out.println("saved filesize [" + outputFilesize + "]");
 				
-				// �t�@�C���T�C�Y���������Ȃ�Ȃ������ꍇ�͏o�̓t�@�C�����폜����
 				if (ResourceUtil.getBoolean("remove.ineffectiveFile")) {
 					if (inputFilesize <= outputFilesize) {
 						outputFile.delete();
@@ -144,11 +141,10 @@ public class ImageArchive {
 					}
 				}
 				
-				// �t�@�C���T�C�Y���������Ȃ�����I���W�i���t�@�C�������l�[������
 				if (ResourceUtil.getBoolean("rename.effectiveOriginalFile")) {
 					if (inputFilesize > outputFilesize) {
-						String renameFilename = targetFile.getParent() + File.separator + ResourceUtil.getString("rename.prefix") + targetFile.getName();
-						targetFile.renameTo(new File(renameFilename));
+						String renameFilename = inputFile.getParent() + File.separator + ResourceUtil.getString("rename.prefix") + inputFile.getName();
+						inputFile.renameTo(new File(renameFilename));
 						System.out.println("original file renamed");
 					}
 				}
@@ -156,17 +152,13 @@ public class ImageArchive {
 			
 			System.out.println("archive complete");
 		} catch (IOException e) {
-			fileListTable.failed(e.getMessage());
+			if (listener != null) listener.failed(inputFile, e.getMessage());
 			failed = true;
 		} catch (RuntimeException e) {
-			fileListTable.failed(e.getMessage());
+			if (listener != null) listener.failed(inputFile, e.getMessage());
 			failed = true;
-		} finally {
-			if (zip != null) zip.close();
-			if (zipOut != null) zipOut.close();
 		}
 		
-		// ���s�����ꍇ�͍폜����
 		if (ResourceUtil.getBoolean("remove.incompleteFile")) {
 			if (failed && outputFile != null) {
 				outputFile.delete();
@@ -176,7 +168,7 @@ public class ImageArchive {
 	}
 	
 	public File getSaveFile() {
-		String filename = targetFile.getAbsolutePath();
+		String filename = inputFile.getAbsolutePath();
 		String[] parts = filename.split(File.separator.replace("\\", "\\\\"));
 		parts[parts.length-1] = ResourceUtil.getString("savefile.prefix") + parts[parts.length-1];
 		filename = String.join(File.separator, parts);
@@ -190,7 +182,7 @@ public class ImageArchive {
 				filename.endsWith("png") || filename.endsWith("PNG");
 	}
 	
-	private class IdleOutputStream extends OutputStream {
+	private class IdleOutputStream extends OutputStream implements AutoCloseable {
 		public void write(int b) throws IOException {
 		}
 	}

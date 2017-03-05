@@ -1,4 +1,4 @@
-package jp.sourceforge.adjustimage.logic;
+package monolith52.adjustimage.logic;
 
 public class Progress {
 	public int length = 0;

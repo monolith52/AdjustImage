@@ -1,7 +1,5 @@
 package monolith52.adjustimage;
 
-import org.scenicview.ScenicView;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
