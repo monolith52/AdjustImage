@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -72,10 +74,11 @@ public class ApplicationController {
 	}
 
 	public void convert() {
+		ExecutorService threadPool = Executors.newFixedThreadPool(4);
 		tableView.getItems().forEach((record) -> {
 			System.out.println(String.format("start processing %s", record.getFile().getName()));
 			ImageArchive ia = new ImageArchive(record.getFile(), new ArchiveHandler());
-			ia.process();
+			threadPool.execute(ia::process);
 		});
 	}
 
@@ -109,12 +112,12 @@ public class ApplicationController {
 			});
 		}
 		@Override
-		public void success(File inputFile, File outputFile) {
+		public void success(File inputFile, long outputFilesize) {
 			Platform.runLater(() -> {
 				FileTableRecord record = findRecordByFile(inputFile);
 				System.out.println(String.format("done processing %s", inputFile.getName()));
-				record.setCompressedSize(outputFile.length());
-				record.setProgress((double)outputFile.length() / record.getOriginalSize()); 
+				record.setCompressedSize(outputFilesize);
+				record.setProgress((double)outputFilesize / record.getOriginalSize()); 
 			});
 		}
 		@Override
