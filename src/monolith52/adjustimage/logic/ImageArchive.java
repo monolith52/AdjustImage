@@ -53,7 +53,7 @@ public class ImageArchive {
 		
 		boolean failed = false;
 		
-		ByteArrayOutputStream inBuffer = new ByteArrayOutputStream();
+		ByteArrayOutputStream inBuffer = new ByteArrayOutputStream((int)inputFile.length());
 		try (FileInputStream input = new FileInputStream(inputFile)) {
 			IOUtils.copy(input, inBuffer);
 		} catch (IOException e) {
