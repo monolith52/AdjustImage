@@ -61,10 +61,6 @@ public class ApplicationController {
 		columnOriginalSize.setCellFactory((column) -> {	return new FilesizeCell<FileTableRecord>(); });
 		columnCompressedSize.setCellFactory((column) -> { return new FilesizeCell<FileTableRecord>(); });
 		columnProgress.setCellFactory((column) -> {	return new PercentageCell<FileTableRecord>(); });
-		
-//		columnFile.prefWidthProperty().bind(Bindings.createDoubleBinding(() -> {
-//			return tableView.getWidth() - columnOriginalSize.getWidth() - columnCompressedSize.getWidth() - columnProgress.getWidth() - 2;
-//		}, tableView.width, columnOriginalSize.widthProperty(), columnCompressedSize.widthProperty(), columnProgress.widthProperty()));
 	}
 
 	@FXML
