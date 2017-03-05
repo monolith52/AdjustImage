@@ -19,6 +19,7 @@ public class RecordRow extends TableRow<FileTableRecord> {
 		} else {
 			setBackground(Background.EMPTY);
 		}
+		setStyle("-fx-border-color: #BBBBBB; -fx-border-width: 0px 0px 1px 0px;");
 	}
 
 }

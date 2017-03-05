@@ -15,10 +15,10 @@ public class FileTableRecord {
 
 	public FileTableRecord(File file, Long originalSize, Long compressedSize, Double progress) {
 		this.file 			= new SimpleObjectProperty<File>(this, "file", file);
-		this.originalSize 	= new SimpleLongProperty(originalSize, "originalSize");
-		this.compressedSize = new SimpleLongProperty(compressedSize, "compressedSize");
-		this.progress 		= new SimpleDoubleProperty(progress, "progress");
-		this.error			= new SimpleStringProperty(null, "error");
+		this.originalSize 	= new SimpleLongProperty(this, "originalSize", originalSize);
+		this.compressedSize = new SimpleLongProperty(this, "compressedSize", compressedSize);
+		this.progress 		= new SimpleDoubleProperty(this, "progress", progress);
+		this.error			= new SimpleStringProperty(this, "error", null);
 	}
 	
 	final private ObjectProperty<File> file;

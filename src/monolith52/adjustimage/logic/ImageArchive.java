@@ -128,6 +128,8 @@ public class ImageArchive {
 			}
 			
 			if (outputFile != null) {
+				zip.close();
+				
 				long inputFilesize = inputFile.length();
 				long outputFilesize = outputFile.length();
 				if (listener != null) listener.success(inputFile, outputFile);

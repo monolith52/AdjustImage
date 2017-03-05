@@ -13,7 +13,7 @@ public class PercentageCell<S> extends TableCell<S, Double> {
 	private Pane root = new Pane();
 	private Rectangle fill = new Rectangle();
 	private Label label = new Label();
-	private static Color barColor = new Color(202.0d/255, 225.0d/255, 223.0d/255, 1.0d);
+	private static Color barColor = new Color(212.0d/255, 235.0d/255, 233.0d/255, 1.0d);
 	
 	public PercentageCell() {
 		root.prefWidthProperty().bind(widthProperty());
@@ -24,7 +24,7 @@ public class PercentageCell<S> extends TableCell<S, Double> {
 		fill.setFill(barColor);
 		fill.setWidth(30.0d);
 		fill.heightProperty().bind(Bindings.createDoubleBinding(() -> {
-			return root.getHeight() - 1;
+			return root.getHeight();
 		}, root.heightProperty()));
 		root.getChildren().addAll(fill, label);
 		

@@ -61,6 +61,10 @@ public class ApplicationController {
 		columnOriginalSize.setCellFactory((column) -> {	return new FilesizeCell<FileTableRecord>(); });
 		columnCompressedSize.setCellFactory((column) -> { return new FilesizeCell<FileTableRecord>(); });
 		columnProgress.setCellFactory((column) -> {	return new PercentageCell<FileTableRecord>(); });
+		
+//		columnFile.prefWidthProperty().bind(Bindings.createDoubleBinding(() -> {
+//			return tableView.getWidth() - columnOriginalSize.getWidth() - columnCompressedSize.getWidth() - columnProgress.getWidth() - 2;
+//		}, tableView.width, columnOriginalSize.widthProperty(), columnCompressedSize.widthProperty(), columnProgress.widthProperty()));
 	}
 
 	@FXML
@@ -113,8 +117,8 @@ public class ApplicationController {
 			Platform.runLater(() -> {
 				FileTableRecord record = findRecordByFile(inputFile);
 				System.out.println(String.format("done processing %s", inputFile.getName()));
-				record.setCompressedSize(inputFile.length());
-				record.setProgress((double)inputFile.length() / record.getOriginalSize()); 
+				record.setCompressedSize(outputFile.length());
+				record.setProgress((double)outputFile.length() / record.getOriginalSize()); 
 			});
 		}
 		@Override
