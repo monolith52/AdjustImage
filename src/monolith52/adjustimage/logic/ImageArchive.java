@@ -1,30 +1,21 @@
 package monolith52.adjustimage.logic;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Enumeration;
-import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
-
-import org.apache.commons.io.IOUtils;
-
 import monolith52.adjustimage.util.ResourceUtil;
 
 public class ImageArchive {
 	
+	Adjuster adjuster = new Adjuster();
 	File inputFile;
 	ArchiveListener listener;
 	boolean isFileError = false;
@@ -35,10 +26,9 @@ public class ImageArchive {
 	}
 
 	public int scan() throws ZipException, IOException {
-		ZipFile zip = null;
 		int index = 0;
-		try {
-			zip = new ZipFile(inputFile, Charset.forName(ResourceUtil.getString("zipfile.charset")));
+		try (ZipFile zip = new ZipFile(inputFile, Charset.forName(ResourceUtil.getString("zipfile.charset")))) {
+			
 			Enumeration<? extends ZipEntry> entries = zip.entries();
 			while (entries.hasMoreElements()) {
 				index += 1;
@@ -48,8 +38,6 @@ public class ImageArchive {
 		} catch (IOException e) {
 			isFileError = true;
 			throw e;
-		} finally {
-			if (zip != null) zip.close();
 		}
 		return index;
 	}
@@ -94,42 +82,20 @@ public class ImageArchive {
 			while (entries.hasMoreElements()) {
 				progress.current += 1;
 				ZipEntry entry = entries.nextElement();
-	
-				JPEGImageWriteParam jiparam = new JPEGImageWriteParam(Locale.getDefault());
-				jiparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-				jiparam.setCompressionQuality(ResourceUtil.getFloat("adjust.compressrate"));
+				String entryName = adjuster.getTargetFilename(entry.getName());
 				
-				if (isImage(entry.getName())) {
-					
-					BufferedImage image = ImageIO.read(zip.getInputStream(entry));
-					ImageWriter writer = ImageIO.getImageWritersByFormatName("jpg").next();
-					
-					String entryName = entry.getName();
-					if (entryName.endsWith(".png") || entryName.endsWith(".PNG")) {
-						entryName = entryName.substring(0, entryName.length() - 4) + ".jpg";
-					}
-					
-					ZipEntry saveEntry = new ZipEntry(entryName);
-					zipOut.putNextEntry(saveEntry);
-					writer.setOutput(ImageIO.createImageOutputStream(zipOut));
-					writer.write(null, new IIOImage(image, null, null), jiparam);
-					zipOut.closeEntry();
-					
-					if (listener != null) listener.update(inputFile, progress);
-					System.out.println("archive: [" + (saveEntry.getSize() / 1024) + "KB] " + entryName);
-				} else {
-					ZipEntry saveEntry = new ZipEntry(entry.getName());
-					zipOut.putNextEntry(saveEntry);
-					IOUtils.copy(zip.getInputStream(entry), zipOut);
-					
-					if (listener != null) listener.update(inputFile, progress);
-					System.out.println("archive: " + entry.getName());
-				}
+				ZipEntry saveEntry = new ZipEntry(entryName);
+				zipOut.putNextEntry(saveEntry);
+				adjuster.adjust(entryName, zip.getInputStream(entry), zipOut);
+				zipOut.closeEntry();
+				
+				if (listener != null) listener.update(inputFile, progress);
+				System.out.println("archive: " + entry.getName());
 			}
+			zip.close();
+			zipOut.close();
 			
 			if (outputFile != null) {
-				zip.close();
-				
 				long inputFilesize = inputFile.length();
 				long outputFilesize = outputFile.length();
 				if (listener != null) listener.success(inputFile, outputFile);
@@ -176,12 +142,6 @@ public class ImageArchive {
 		filename = String.join(File.separator, parts);
 		
 		return new File(filename);
-	}
-	
-	protected boolean isImage(String filename) {
-		return filename.endsWith("jpg") || filename.endsWith("JPG") ||
-				filename.endsWith("jpeg") || filename.endsWith("JPEG") ||
-				filename.endsWith("png") || filename.endsWith("PNG");
 	}
 	
 	private class IdleOutputStream extends OutputStream implements AutoCloseable {
